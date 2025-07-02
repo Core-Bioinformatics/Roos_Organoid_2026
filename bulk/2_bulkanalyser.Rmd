@@ -1,0 +1,68 @@
+```{r}
+library(readr)
+library(bulkAnalyseR)
+library(stringr)
+```
+
+```{r}
+# samples = read.csv(file = "preprocessing/feature-counts/unfiltered/expr-matrix.csv", row.names = 1)
+samples = read.csv(file = "preprocessing/feature-counts/denoised/expr-matrix.csv", row.names = 1)
+metadata = read.csv(file = "metadata/samples.csv")
+```
+
+
+```{r, fig.width=10, fig.height=8}
+samples <- preprocessExpressionMatrix(samples, output.plot = TRUE)
+```
+
+```{r}
+bk_metadata = data.frame(samples = sapply(metadata$Sample.Name, function(x) { str_replace_all(x, " ", "_")}), 
+                         barcodes = metadata$Barcode, 
+                         sample_name = sapply(metadata$Sample.Name, function(x) { str_replace_all(x, " ", "_")}), 
+                         sample_type = sapply(metadata$Sample.Name, function(x) { toupper(strsplit(x, " ")[[1]][1])}),
+                         organoid_abbreviation = metadata$Organoid.abreviation,
+                         developmental_stage = metadata$Developmental.stage,
+                         age = metadata$Age)
+bk_metadata = bk_metadata[order(bk_metadata$barcodes), ]
+bk_metadata[["age_merged"]] = bk_metadata$age
+bk_metadata$age_merged[bk_metadata[["age_merged"]] == "3_w14"] = "3_w14+15"
+bk_metadata$age_merged[bk_metadata[["age_merged"]] == "4_w15"] = "3_w14+15"
+bk_metadata$age_merged[bk_metadata[["age_merged"]] == "5_w17"] = "4_w17+19"
+bk_metadata$age_merged[bk_metadata[["age_merged"]] == "6_w19"] = "4_w17+19"
+bk_metadata$age_merged[bk_metadata[["age_merged"]] == "7_w20"] = "5_w20+21"
+bk_metadata$age_merged[bk_metadata[["age_merged"]] == "8_w21"] = "5_w20+21"
+bk_metadata$age_merged[bk_metadata[["age_merged"]] == "9_GCO adult"] = "6_GCO adult"
+bk_metadata$age_merged[bk_metadata[["age_merged"]] == "9_ICO adult"] = "6_ICO adult"
+bk_metadata[["age_type"]] = sapply(1:nrow(bk_metadata), function(x) { paste(bk_metadata$sample_type[x], bk_metadata$age_merged[x], sep = "_")})
+
+
+bk_metadata[4,]$sample_type = "ICO"
+bk_metadata[4,]$age_type= "ICO_6_ICO adult"
+
+
+bk_metadata$sample_type = factor(bk_metadata$sample_type, levels=  sort(unique(bk_metadata$sample_type)))
+bk_metadata$sample_name = factor(bk_metadata$sample_name, levels=  sort(unique(bk_metadata$sample_name)))
+bk_metadata$organoid_abbreviation = factor(bk_metadata$organoid_abbreviation, levels=  sort(unique(bk_metadata$organoid_abbreviation)))
+bk_metadata$developmental_stage = factor(bk_metadata$developmental_stage, levels=  sort(unique(bk_metadata$developmental_stage)))
+bk_metadata$age = factor(bk_metadata$age, levels=  sort(unique(bk_metadata$age)))
+bk_metadata$age_type = factor(bk_metadata$age_type, levels=  sort(unique(bk_metadata$age_type)))
+bk_metadata$age_merged = factor(bk_metadata$age_merged, levels=  sort(unique(bk_metadata$age_merged)))
+
+```
+
+
+```{r}
+generateShinyApp(
+  shiny.dir = "output/shiny-apps/221010_bulkAnalyseR_denoised/",
+  app.title = "BulkAnalyseR - Floris 2209 bulk samples - Denoised",
+  modality = "RNA",
+  expression.matrix = samples,
+  metadata = bk_metadata,
+  organism = "hsapiens",
+  org.db = "org.Hs.eg.db"
+)
+```
+
+```{r}
+shiny::runApp('/sutherland-scratch/andi/projects/0_2209_Floris_bulk/output/shiny-apps/221019_bulkAnalyseR_denoised')
+```

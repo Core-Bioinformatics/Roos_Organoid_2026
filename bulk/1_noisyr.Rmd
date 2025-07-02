@@ -1,0 +1,49 @@
+```{r}
+library(noisyr)
+```
+
+
+```{r eval=FALSE}
+noisy_r_results = noisyr_transcript(
+  path.bams = "preprocessing/star/human-copy/",
+  path.gtf = "genomes_collection/HSapiens/GRCh38.p13/Homo_sapiens.GRCh38.101.gtf",
+  ncores = 16
+)
+```
+
+
+```{r}
+expression.summary = calculate_expression_similarity_transcript(
+  path.bams = "preprocessing/star/human-copy/",
+  path.gtf = "genomes_collection/HSapiens/GRCh38.p13/Homo_sapiens.GRCh38.101.gtf",
+  ncores = 16
+)
+```
+
+```{r}
+expression.similarity.plot = plot_expression_similarity(expression.summary)
+```
+
+```{r, fig.width=14, fig.height=7}
+print(expression.similarity.plot[[2]] + ggtitle("x"))
+```
+
+```{r}
+bams <- sapply(base::list.files("preprocessing/star/human-copy/", pattern = "\\.bam$"),
+               function(x) { strsplit(x, "-")[[1]][1] })
+
+
+for(i in 1:length(bams)) {
+  print(expression.similarity.plot[[(i*2)]] + ggtitle(paste(bams[i], "- noise detection transcript level")))
+}
+
+```
+
+
+```{r}
+noise.threshold = calculate_noise_threshold(expression.summary)
+```
+
+```{r}
+noise.stats = calculate_noise_threshold_method_statistics(expression.summary)
+```
